@@ -61,7 +61,7 @@ int main(int argc, char** argv)
 
   {
     // different kinds of subranges with const modifier
-    std::array<const std::vector<std::array<int, 2>>, 2> data {
+    std::array<std::vector<std::array<int, 2>>, 2> data {
       {
         {
           { { { 1, 2 } }, { { 3, 4 } } },
