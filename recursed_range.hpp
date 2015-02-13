@@ -10,6 +10,7 @@ struct recursed_range
 {
 public:
   using iterator = recursive_iterator<Range>;
+  using value_type = value_type_of<iterator>;
   using size_type = difference_type_of<iterator>;
 
 public:
