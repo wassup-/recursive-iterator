@@ -12,6 +12,33 @@ namespace detail
 using True = std::true_type;
 using False = std::false_type;
 
+#define AUTO_RETURNS(x) -> decltype(x) { return x; }
+
+template<typename Triplet>
+inline auto get_begin_iter(Triplet&& triplet)
+AUTO_RETURNS(std::get<0>(triplet))
+
+template<typename Triplet>
+inline auto get_cur_iter(Triplet&& triplet)
+AUTO_RETURNS(std::get<1>(triplet))
+
+template<typename Triplet>
+inline auto get_end_iter(Triplet&& triplet)
+AUTO_RETURNS(std::get<2>(triplet))
+
+template<typename T>
+using unqualified_t = typename std::remove_reference<typename std::remove_const<T>::type>::type;
+
+template<typename Triplets>
+inline auto first_triplet_in(Triplets&& triplets)
+AUTO_RETURNS(std::get<0>(triplets))
+
+template<typename Triplets>
+inline auto last_triplet_in(Triplets&& triplets)
+AUTO_RETURNS(std::get<(std::tuple_size<unqualified_t<Triplets>>::value - 1)>(triplets))
+
+#undef AUTO_RETURNS
+
 template<int Index, int Sz>
 struct default_initializer
 {
@@ -26,9 +53,9 @@ struct default_initializer
     auto& cur_triplet = std::get<cur_index::value>(triplets);
 
     {
-      auto& first = std::get<0>(cur_triplet);
-      auto& cur = std::get<1>(cur_triplet);
-      auto& last = std::get<2>(cur_triplet);
+      auto& first = get_begin_iter(cur_triplet);
+      auto& cur = get_cur_iter(cur_triplet);
+      auto& last = get_end_iter(cur_triplet);
 
       auto& prev_iter = std::get<!Bool::value>(prev_triplet);
       first = cur = begin(*prev_iter);
@@ -56,7 +83,7 @@ struct default_initializer<0, Sz>
 
     {
       const auto& first = std::get<!Bool::value>(cur_triplet);
-      const auto& last = std::get<2>(cur_triplet);
+      const auto& last = get_end_iter(cur_triplet);
       if(first == last) return false;
     }
 
@@ -85,8 +112,8 @@ struct default_incrementer
 
     auto& cur_triplet = std::get<cur_index::value>(triplets);
 
-    auto& cur = std::get<1>(cur_triplet);
-    const auto& last = std::get<2>(cur_triplet);
+    auto& cur = get_cur_iter(cur_triplet);
+    const auto& last = get_end_iter(cur_triplet);
 
     if(cur != last)
     {
@@ -132,7 +159,7 @@ public:
 public:
   recursive_iterator(iterator first, iterator last, iterator cur)
   {
-    auto& initial_triplet = first_triplet();
+    auto& initial_triplet = detail::first_triplet_in(triplets_);
     initial_triplet = std::tie(first, cur, last);
     initialize();
 
@@ -146,8 +173,8 @@ public:
 
   final_iterator base() const
   {
-    const auto& triplet = last_triplet();
-    return std::get<1>(triplet);
+    const auto& triplet = detail::last_triplet_in(triplets_);
+    return detail::get_cur_iter(triplet);
   }
 
   reference operator*() const
@@ -177,30 +204,6 @@ public:
   { return !(*this == other); }
 
 protected:
-  auto first_triplet()
-  -> typename std::add_lvalue_reference<decltype(std::get<0>(std::declval<iterator_triplets>()))>::type
-  {
-    return std::get<0>(triplets_);
-  }
-
-  auto first_triplet() const
-  -> typename std::add_lvalue_reference<decltype(std::get<0>(std::declval<iterator_triplets>()))>::type
-  {
-    return std::get<0>(triplets_);
-  }
-
-  auto last_triplet()
-  -> typename std::add_lvalue_reference<decltype(std::get<(recurse_depth::value - 1)>(std::declval<const iterator_triplets>()))>::type
-  {
-    return std::get<(recurse_depth::value - 1)>(triplets_);
-  }
-
-  auto last_triplet() const
-  -> typename std::add_lvalue_reference<decltype(std::get<(recurse_depth::value - 1)>(std::declval<const iterator_triplets>()))>::type
-  {
-    return std::get<(recurse_depth::value - 1)>(triplets_);
-  }
-
   inline void initialize()
   {
     using initializer = Initializer<0, recurse_depth::value>;
