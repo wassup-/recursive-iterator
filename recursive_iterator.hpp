@@ -145,16 +145,20 @@ template<typename Range,
          template<int, int> class Initializer = detail::default_initializer,
          template<int> class Incrementer = detail::default_incrementer>
 struct recursive_iterator
-: std::iterator<std::forward_iterator_tag, final_value_type_of<Range>>
+: std::iterator<std::forward_iterator_tag, final_value_type_of_t<Range>>
 {
 public:
-  using iterator = iterator_of<Range>;
-  using chain = iterator_chain_of<Range>;
-  using iterator_triplets = typename chain::template enclose<std::tuple, detail::iterator_triplet>;
+  using iterator = iterator_of_t<Range>;
+  using chain = iterator_chain_of_t<Range>;
+  using iterator_triplets = meta::apply_list<meta::quote<std::tuple>,
+                                             meta::transform<chain,
+                                                             meta::quote<detail::iterator_triplet>
+                                             >
+                                 >;//::template enclose<std::tuple, detail::iterator_triplet>;
   using recurse_depth = std::tuple_size<iterator_triplets>;
-  using final_iterator = typename chain::last_type;
+  using final_iterator = meta::back<chain>;//typename chain::last_type;
 
-  using reference = reference_type_of<final_iterator>;
+  using reference = reference_type_of_t<final_iterator>;
 
 public:
   recursive_iterator(iterator first, iterator last, iterator cur)
