@@ -10,8 +10,8 @@ struct recursed_range
 {
 public:
   using iterator = recursive_iterator<Range>;
-  using value_type = value_type_of_t<iterator>;
-  using size_type = difference_type_of_t<iterator>;
+  using value_type = value_type_of<iterator>;
+  using size_type = difference_type_of<iterator>;
 
 public:
   recursed_range(Range& range)

@@ -6,53 +6,30 @@
 #include <iterator>
 #include <type_traits>
 
-template<typename T>
-meta::eval<std::add_lvalue_reference<T>>
-ref_declval();
-
-template<typename T>
-meta::eval<std::add_lvalue_reference<meta::eval<std::add_const<T>>>>
-cref_declval();
-
 namespace detail
 {
 
 template<typename T>
 struct iterator_of_impl
-: meta::id<decltype(begin(ref_declval<T>()))>
+: meta::id<decltype(begin(std::declval<T&>()))>
 { };
 
 } // namespace detail
 
 template<typename T>
-using iterator_of = detail::iterator_of_impl<T>;
+using iterator_of = meta::eval<detail::iterator_of_impl<T>>;
 
 template<typename Iterator>
-using value_type_of = meta::id<typename std::iterator_traits<Iterator>::value_type>;
+using value_type_of = typename std::iterator_traits<Iterator>::value_type;
 
 template<typename Iterator>
-using reference_type_of = meta::id<typename std::iterator_traits<Iterator>::reference>;
+using reference_type_of = typename std::iterator_traits<Iterator>::reference;
 
 template<typename Iterator>
-using pointer_type_of = meta::id<typename std::iterator_traits<Iterator>::pointer>;
+using pointer_type_of = typename std::iterator_traits<Iterator>::pointer;
 
 template<typename Iterator>
-using difference_type_of = meta::id<typename std::iterator_traits<Iterator>::difference_type>;
-
-template<typename T>
-using iterator_of_t = meta::eval<iterator_of<T>>;
-
-template<typename Iterator>
-using value_type_of_t = meta::eval<value_type_of<Iterator>>;
-
-template<typename Iterator>
-using reference_type_of_t = meta::eval<reference_type_of<Iterator>>;
-
-template<typename Iterator>
-using pointer_type_of_t = meta::eval<pointer_type_of<Iterator>>;
-
-template<typename Iterator>
-using difference_type_of_t = meta::eval<difference_type_of<Iterator>>;
+using difference_type_of = typename std::iterator_traits<Iterator>::difference_type;
 
 namespace detail
 {
@@ -60,12 +37,9 @@ namespace detail
 template<typename T>
 struct is_iterable_impl
 {
-  using yes = char;
-  using no = yes[2];
-
   template<typename U>
-  static std::true_type test(decltype(begin(ref_declval<U>()))*,
-                             decltype(end(ref_declval<U>()))*);
+  static std::true_type test(decltype(begin(std::declval<U&>()))*,
+                             decltype(end(std::declval<U&>()))*);
   template<typename U>
   static std::false_type test(...);
 
@@ -94,7 +68,7 @@ namespace detail
 {
 
 template<typename T>
-using remove_pointer_t = typename std::remove_pointer<T>::type;
+using remove_pointer_t = meta::eval<std::remove_pointer<T>>;
 
 template<typename Range, typename Iterators, typename = std::false_type>
 struct iterator_chain_of_impl : Iterators { };
@@ -104,8 +78,8 @@ struct iterator_chain_of_impl<Range, meta::list<Iters...>, std::true_type>
 {
   using value_type = typename Range::value_type;
   using prev_iterator = meta::back<meta::list<Iters...>>;
-  using cv_type = remove_pointer_t<pointer_type_of_t<prev_iterator>>;
-  using iterator = iterator_of_t<with_const_of<Range, cv_type>>;
+  using cv_type = remove_pointer_t<pointer_type_of<prev_iterator>>;
+  using iterator = iterator_of<with_const_of<Range, cv_type>>;
 
   using type = meta::eval<iterator_chain_of_impl<value_type,
                                                  meta::list<Iters..., iterator>,
@@ -116,7 +90,7 @@ template<typename Range>
 struct iterator_chain_of_impl<Range, meta::list<>, std::true_type>
 {
   using value_type = typename Range::value_type;
-  using iterator = iterator_of_t<Range>;
+  using iterator = iterator_of<Range>;
 
   using type = meta::eval<iterator_chain_of_impl<value_type,
                                                  meta::list<iterator>,
@@ -126,25 +100,19 @@ struct iterator_chain_of_impl<Range, meta::list<>, std::true_type>
 } // namespace detail
 
 template<typename Range>
-using iterator_chain_of = detail::iterator_chain_of_impl<Range, meta::list<>, is_iterable<Range>>;
-
-template<typename Range>
-using iterator_chain_of_t = meta::eval<iterator_chain_of<Range>>;
+using iterator_chain_of = meta::eval<detail::iterator_chain_of_impl<Range, meta::list<>, is_iterable<Range>>>;
 
 namespace detail
 {
 
 template<typename Range>
 struct final_value_type_of_impl
-: meta::id<value_type_of_t<meta::back<iterator_chain_of_t<Range>>>>
+: meta::id<value_type_of<meta::back<iterator_chain_of<Range>>>>
 { };
 
 } // namespace detail
 
 template<typename Range>
-using final_value_type_of = detail::final_value_type_of_impl<Range>;
-
-template<typename Range>
-using final_value_type_of_t = meta::eval<final_value_type_of<Range>>;
+using final_value_type_of = meta::eval<detail::final_value_type_of_impl<Range>>;
 
 #endif

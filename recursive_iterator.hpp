@@ -27,7 +27,7 @@ inline auto get_end_iter(Triplet&& triplet)
 AUTO_RETURNS(std::get<2>(triplet))
 
 template<typename T>
-using unqualified_t = typename std::remove_reference<typename std::remove_const<T>::type>::type;
+using unqualified_t = meta::eval<std::remove_reference<meta::eval<std::remove_const<T>>>>;
 
 template<typename Triplets>
 inline auto first_triplet_in(Triplets&& triplets)
@@ -145,11 +145,11 @@ template<typename Range,
          template<int, int> class Initializer = detail::default_initializer,
          template<int> class Incrementer = detail::default_incrementer>
 struct recursive_iterator
-: std::iterator<std::forward_iterator_tag, final_value_type_of_t<Range>>
+: std::iterator<std::forward_iterator_tag, final_value_type_of<Range>>
 {
 public:
-  using iterator = iterator_of_t<Range>;
-  using chain = iterator_chain_of_t<Range>;
+  using iterator = iterator_of<Range>;
+  using chain = iterator_chain_of<Range>;
   using iterator_triplets = meta::apply_list<meta::quote<std::tuple>,
                                              meta::transform<chain,
                                                              meta::quote<detail::iterator_triplet>
@@ -158,7 +158,7 @@ public:
   using recurse_depth = std::tuple_size<iterator_triplets>;
   using final_iterator = meta::back<chain>;//typename chain::last_type;
 
-  using reference = reference_type_of_t<final_iterator>;
+  using reference = reference_type_of<final_iterator>;
 
 public:
   recursive_iterator(iterator first, iterator last, iterator cur)
